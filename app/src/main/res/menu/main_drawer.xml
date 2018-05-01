@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_home"
+            android:icon="@drawable/ic_home"
+            android:title="@string/home" />
+
+        <item
+            android:id="@+id/menu_write"
+            android:icon="@drawable/ic_write"
+            android:title="@string/report" />
+
+        <item
+            android:id="@+id/menu_admin"
+            android:icon="@drawable/ic_admin"
+            android:title="@string/admin" />
+    </group>
+    <item android:title="@string/admin" android:id="@+id/cate_admin" android:visible="false">
+        <menu>
+            <item
+                android:id="@+id/menu_logout"
+                android:icon="@drawable/ic_logout"
+                android:title="@string/logout" />
+        </menu>
+    </item>
+</menu>
