@@ -26,6 +26,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 
+import com.dgsw.bamboo.Tools;
 import com.dgsw.bamboo.recycler.AdminPostAdapter;
 import com.dgsw.bamboo.data.Data;
 import com.dgsw.bamboo.data.PostData;
@@ -54,6 +55,8 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
+import static com.dgsw.bamboo.Tools.isInternetAvailable;
+
 public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 
     private int count, maxContent;
@@ -64,6 +67,9 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 
     private ConstraintLayout admin;
     private ConstraintLayout signIn;
+
+    private TextInputEditText id;
+    private TextInputEditText pw;
 
     AdminPostAdapter adminPostAdapter;
 
@@ -87,7 +93,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 
         TextInputLayout idLayout = view.findViewById(R.id.inputIDLayout);
         TextInputLayout pwLayout = view.findViewById(R.id.inputPWLayout);
-        TextInputEditText id = view.findViewById(R.id.inputID);
+        id = view.findViewById(R.id.inputID);
         id.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -105,7 +111,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
             public void afterTextChanged(Editable editable) {
             }
         });
-        TextInputEditText pw = view.findViewById(R.id.inputPW);
+        pw = view.findViewById(R.id.inputPW);
         pw.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -125,6 +131,10 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         });
         Button signInButton = view.findViewById(R.id.signInButton);
         signInButton.setOnClickListener(v -> {
+            if (!Tools.isInternetAvailable()) {
+                Snackbar.make(view, getString(R.string.offline), Snackbar.LENGTH_SHORT).show();
+                return;
+            }
             JSONObject jsonObject = new JSONObject();
             if (id.getText() != null && pw.getText() != null)
                 try {
@@ -136,7 +146,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
             new PostTask(v, (MainActivity) activity).setTaskListener(resCode -> {
                 switch (resCode) {
                     case HttpURLConnection.HTTP_OK:
-                        setViewVisibility(View.VISIBLE, View.INVISIBLE);
+                        setViewVisibility(View.VISIBLE, View.GONE);
                         if (activity != null) {
                             activity.setTitle(R.string.admin);
                             InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -159,13 +169,13 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 
 
         if (Data.isEmpty()) {
-            setViewVisibility(View.INVISIBLE, View.VISIBLE);
+            setViewVisibility(View.GONE, View.VISIBLE);
 
             if (activity != null)
                 activity.setTitle(R.string.admin_sign_in);
 
         } else {
-            setViewVisibility(View.VISIBLE, View.INVISIBLE);
+            setViewVisibility(View.VISIBLE, View.GONE);
             adminViewInit(view);
         }
         return view;
@@ -175,23 +185,31 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh);
         swipeRefreshLayout.setRefreshing(true);
         swipeRefreshLayout.setOnRefreshListener(this);
+
         final RecyclerView recyclerView = view.findViewById(R.id.docs);
 
         adminPostAdapter = new AdminPostAdapter(postDataArrayList, getActivity(), this);
-        if (postDataArrayList.isEmpty()) {
-            new GetCount().setTaskListener(i -> {
-                maxContent = i;
-                adminPostAdapter.setMaxContent(maxContent);
-                new GetPost(count).setTaskListener(postDataList -> {
-                    postDataArrayList.addAll(postDataList);
-                    if (maxContent >= count) if (maxContent != 0) count += 5;
-                    adminPostAdapter.notifyDataSetChanged();
-                    swipeRefreshLayout.setRefreshing(false);
+
+        if (isInternetAvailable()) {
+            adminPostAdapter.setOnline(true);
+            if (postDataArrayList.isEmpty()) {
+                new GetCount().setTaskListener(i -> {
+                    maxContent = i;
+                    adminPostAdapter.setMaxContent(maxContent);
+                    new GetPost(count).setTaskListener(postDataList -> {
+                        postDataArrayList.addAll(postDataList);
+                        if (maxContent >= count) if (maxContent != 0) count += 5;
+                        adminPostAdapter.notifyDataSetChanged();
+                        swipeRefreshLayout.setRefreshing(false);
+                    }).execute(Data.token);
                 }).execute(Data.token);
-            }).execute(Data.token);
+            } else {
+                swipeRefreshLayout.setRefreshing(false);
+                adminPostAdapter.setMaxContent(maxContent);
+            }
         } else {
+            adminPostAdapter.setOnline(false);
             swipeRefreshLayout.setRefreshing(false);
-            adminPostAdapter.setMaxContent(maxContent);
         }
 
         recyclerView.setAdapter(adminPostAdapter);
@@ -204,8 +222,8 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     }
 
     public void setViewVisibility(@ViewVisibility int adminVisibility, @ViewVisibility int signInVisibility) {
-        admin.setVisibility(adminVisibility);
         signIn.setVisibility(signInVisibility);
+        admin.setVisibility(adminVisibility);
     }
 
     public void getPosts() {
@@ -257,21 +275,39 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     }
 
     @Override
-    public void onRefresh() {
-        count = 0;
-        new GetCount().setTaskListener(i -> {
-            maxContent = i;
-            adminPostAdapter.setMaxContent(maxContent);
-            postDataArrayList.clear();
-            new GetPost(count).setTaskListener(postDataList -> {
-                if (maxContent >= count) count += 5;
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (id.getText() != null && pw.getText() != null) {
+            id.getText().clear();
+            pw.getText().clear();
+        }
 
-                postDataArrayList.addAll(postDataList);
-                adminPostAdapter.notifyItemRangeChanged(0, postDataArrayList.size() - 1);
-                adminPostAdapter.notifyDataSetChanged();
-                swipeRefreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void onRefresh() {
+        if (isInternetAvailable()) {
+            adminPostAdapter.setOnline(true);
+            count = 0;
+            new GetCount().setTaskListener(i -> {
+                maxContent = i;
+                adminPostAdapter.setMaxContent(maxContent);
+                postDataArrayList.clear();
+                new GetPost(count).setTaskListener(postDataList -> {
+                    if (maxContent >= count) count += 5;
+
+                    postDataArrayList.addAll(postDataList);
+                    adminPostAdapter.notifyItemRangeChanged(0, postDataArrayList.size() - 1);
+                    adminPostAdapter.notifyDataSetChanged();
+                    swipeRefreshLayout.setRefreshing(false);
+                }).execute(Data.token);
             }).execute(Data.token);
-        }).execute(Data.token);
+        } else {
+            adminPostAdapter.setOnline(false);
+            swipeRefreshLayout.setRefreshing(false);
+            postDataArrayList.clear();
+            adminPostAdapter.notifyDataSetChanged();
+        }
     }
 
     private class PostRequest {

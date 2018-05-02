@@ -19,6 +19,18 @@
             android:icon="@drawable/ic_admin"
             android:title="@string/admin" />
     </group>
+    <item android:title="@string/etc" android:id="@+id/cate_etc">
+        <menu>
+            <item
+                android:id="@+id/menu_github"
+                android:icon="@drawable/ic_github"
+                android:title="@string/github" />
+            <item
+                android:id="@+id/menu_bug_report"
+                android:icon="@drawable/ic_bug_report"
+                android:title="@string/bug_report" />
+        </menu>
+    </item>
     <item android:title="@string/admin" android:id="@+id/cate_admin" android:visible="false">
         <menu>
             <item

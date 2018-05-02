@@ -5,19 +5,41 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>\
+        <item name="colorAccent">@color/colorAccent</item>
         <item name="colorButtonNormal">@color/colorButton</item>
+        <item name="colorControlHighlight">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/colorPrimary</item>
         <item name="android:statusBarColor">?android:attr/colorPrimary</item>
     </style>
 
-    <style name="AppTheme.Button" parent="@style/Widget.AppCompat.Button" >
+    <style name="AppTheme.Button" parent="Widget.AppCompat.Button">
         <item name="colorButtonNormal">@color/colorButton</item>
+        <item name="colorControlHighlight">#0045a9</item>
         <item name="android:padding">16dp</item>
     </style>
 
     <style name="AppTheme.Button.Deny">
         <item name="colorButtonNormal">@color/colorButtonDeny</item>
+        <item name="colorControlHighlight">#ab0008</item>
+    </style>
+
+    <style name="AppTheme.Button.More">
+        <item name="colorButtonNormal">@color/colorAccent</item>
+        <item name="colorControlHighlight">#008b6e</item>
+    </style>
+
+    <style name="AppTheme.TextInputLayout.Error" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textColor">@color/colorTextError</item>
+    </style>
+
+    <style name="AppTheme.Button.Borderless" parent="Widget.AppCompat.Button.Borderless">
+        <item name="colorButtonNormal">@color/colorButton</item>
+        <item name="colorControlHighlight">#779dff</item>
+    </style>
+
+    <style name="AppTheme.Button.Borderless.Deny">
+        <item name="colorButtonNormal">@color/colorButtonDeny</item>
+        <item name="colorControlHighlight">#ff5859</item>
     </style>
 
     <style name="AppTheme.NoActionBar">

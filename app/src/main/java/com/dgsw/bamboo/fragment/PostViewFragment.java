@@ -18,19 +18,24 @@ import com.dgsw.bamboo.data.PostData;
 import com.dgsw.bamboo.R;
 import com.dgsw.bamboo.data.URLS;
 
-import net.htmlparser.jericho.Source;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
+
+import static com.dgsw.bamboo.Tools.isInternetAvailable;
 
 public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 
@@ -63,21 +68,26 @@ public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnR
 
         postAdapter = new PostAdapter(postDataArrayList, getActivity(), this);
 
-        if (postDataArrayList.isEmpty()) {
-            new GetCount().setTaskListener(i -> {
-                maxContent = i;
-                postAdapter.setMaxContent(maxContent);
-                new GetPost(count).setTaskListener(postDataList -> {
-                    postDataArrayList.addAll(postDataList);
-                    if (maxContent >= count) count += 5;
-                    postAdapter.notifyDataSetChanged();
-                    swipeRefreshLayout.setRefreshing(false);
+        if (isInternetAvailable()) {
+            postAdapter.setOnline(true);
+            if (postDataArrayList.isEmpty()) {
+                new GetCount().setTaskListener(i -> {
+                    maxContent = i;
+                    postAdapter.setMaxContent(maxContent);
+                    new GetPost(count).setTaskListener(postDataList -> {
+                        postDataArrayList.addAll(postDataList);
+                        if (maxContent >= count) count += 5;
+                        postAdapter.notifyDataSetChanged();
+                        swipeRefreshLayout.setRefreshing(false);
+                    }).execute();
                 }).execute();
-            }).execute();
+            } else {
+                swipeRefreshLayout.setRefreshing(false);
+                postAdapter.setMaxContent(maxContent);
+            }
         } else {
+            postAdapter.setOnline(false);
             swipeRefreshLayout.setRefreshing(false);
-            swipeRefreshLayout.setRefreshing(false);
-            postAdapter.setMaxContent(maxContent);
         }
 
         recyclerView.setAdapter(postAdapter);
@@ -99,20 +109,28 @@ public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnR
 
     @Override
     public void onRefresh() {
-        count = 0;
-        new GetCount().setTaskListener(i -> {
-            maxContent = i;
-            postAdapter.setMaxContent(maxContent);
-            postDataArrayList.clear();
-            new GetPost(count).setTaskListener(postDataList -> {
-                if (maxContent >= count) count += 5;
+        if (isInternetAvailable()) {
+            postAdapter.setOnline(true);
+            count = 0;
+            new GetCount().setTaskListener(i -> {
+                maxContent = i;
+                postAdapter.setMaxContent(maxContent);
+                postDataArrayList.clear();
+                new GetPost(count).setTaskListener(postDataList -> {
+                    if (maxContent >= count) count += 5;
 
-                postDataArrayList.addAll(postDataList);
-                postAdapter.notifyItemRangeChanged(0, postDataArrayList.size() - 1);
-                postAdapter.notifyDataSetChanged();
-                swipeRefreshLayout.setRefreshing(false);
+                    postDataArrayList.addAll(postDataList);
+                    postAdapter.notifyItemRangeChanged(0, postDataArrayList.size() - 1);
+                    postAdapter.notifyDataSetChanged();
+                    swipeRefreshLayout.setRefreshing(false);
+                }).execute();
             }).execute();
-        }).execute();
+        } else {
+            postAdapter.setOnline(false);
+            swipeRefreshLayout.setRefreshing(false);
+            postDataArrayList.clear();
+            postAdapter.notifyDataSetChanged();
+        }
     }
 
     private static class GetCount extends AsyncTask<Void, Void, Integer> {
@@ -121,14 +139,42 @@ public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnR
 
         @Override
         protected Integer doInBackground(Void... voids) {
+            HttpURLConnection urlConnection = null;
             try {
-                Source cntSource = new Source(new URL(URLS.USER.GET.countURL));
-                cntSource.fullSequentialParse();
-                JSONObject jsonObject = new JSONObject(cntSource.getSource().toString());
+                URL url = new URL(URLS.USER.GET.countURL);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Accept", "application/json");
+                InputStream inputStream = urlConnection.getInputStream();
 
-                return jsonObject.getInt("count");
+                StringBuilder stringBuilder = new StringBuilder();
+                if (inputStream == null) {
+                    return 0;
+                }
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null)
+                    stringBuilder.append(inputLine).append("\n");
+                if (stringBuilder.length() == 0) {
+                    return 0;
+                }
+
+                if (urlConnection.getResponseCode() != HttpURLConnection.HTTP_INTERNAL_ERROR) {
+                    if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_NO_CONTENT)
+                        return 0;
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                    return jsonObject.getInt("count");
+                }
+                inputStream.close();
+                reader.close();
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
             }
             return 0;
         }
@@ -163,30 +209,65 @@ public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnR
         protected final ArrayList<PostData> doInBackground(Void... v) {
 
             ArrayList<PostData> postDataArrayList = new ArrayList<>();
+
+            HttpURLConnection urlConnection = null;
             try {
-                Source cntSource = new Source(new URL(URLS.USER.GET.postedURL + index));
-                cntSource.fullSequentialParse();
-                JSONObject jsonObject = new JSONObject(cntSource.getSource().toString());
-                JSONArray jsonArray = jsonObject.getJSONArray("posted");
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject dataObject = jsonArray.getJSONObject(i);
+                URL url = new URL(URLS.USER.GET.postedURL + index);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Accept", "application/json");
+                InputStream inputStream = urlConnection.getInputStream();
 
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.KOREA);
-                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("M월 d일 h시 m분", Locale.KOREA);
+                StringBuilder stringBuilder = new StringBuilder();
+                if (inputStream == null) {
+                    return postDataArrayList;
+                }
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-                    Calendar calendarWrite = Calendar.getInstance();
-                    calendarWrite.setTime(dateFormat.parse(dataObject.getString("writeDate")));
-                    Calendar calendarAllow = Calendar.getInstance();
-                    calendarAllow.setTime(dateFormat.parse(dataObject.getString("allowDate")));
-
-
-                    postDataArrayList.add(new PostData(dataObject.getInt("idx"), dataObject.getString("desc"), simpleDateFormat.format(calendarWrite.getTime()), simpleDateFormat.format(calendarAllow.getTime())));
+                String inputLine;
+                while ((inputLine = reader.readLine()) != null)
+                    stringBuilder.append(inputLine).append("\n");
+                if (stringBuilder.length() == 0) {
+                    return postDataArrayList;
                 }
 
-            } catch (IOException | JSONException | ParseException e) {
+                if (urlConnection.getResponseCode() != HttpURLConnection.HTTP_INTERNAL_ERROR) {
+                    if (urlConnection.getResponseCode() == HttpURLConnection.HTTP_NO_CONTENT)
+                        return postDataArrayList;
+
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                    JSONArray jsonArray = jsonObject.getJSONArray("posted");
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject dataObject = jsonArray.getJSONObject(i);
+
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.KOREA);
+
+                        Calendar calendarWrite = Calendar.getInstance();
+                        calendarWrite.setTime(dateFormat.parse(dataObject.getString("writeDate")));
+                        Calendar calendarAllow = Calendar.getInstance();
+                        calendarAllow.setTime(dateFormat.parse(dataObject.getString("allowDate")));
+
+                        postDataArrayList.add(new PostData(dataObject.getInt("idx"), dataObject.getString("desc"), convertDateTime(calendarWrite.getTime()), convertDateTime(calendarAllow.getTime())));
+                    }
+                }
+                inputStream.close();
+                reader.close();
+            } catch (IOException | ParseException | JSONException e) {
                 e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
             }
             return postDataArrayList;
+        }
+
+        private String convertDateTime(Date date) {
+            if (new SimpleDateFormat("m", Locale.KOREA).format(date.getTime()).equals("0"))
+                return new SimpleDateFormat("M월 d일 h시", Locale.KOREA).format(date.getTime());
+            else
+                return new SimpleDateFormat("M월 d일 h시 m분", Locale.KOREA).format(date.getTime());
         }
 
         @Override

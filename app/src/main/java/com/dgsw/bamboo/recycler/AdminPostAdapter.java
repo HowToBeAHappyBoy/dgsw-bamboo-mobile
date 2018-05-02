@@ -18,8 +18,11 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private Activity activity;
     private AdminFragment fragment;
 
+    private boolean isOnline = true;
+
     private int maxContent;
 
+    private final static int TYPE_OFFLINE = -2;
     private final static int TYPE_EMPTY = -1;
     private final static int TYPE_CONTENT = 0;
     private final static int TYPE_MORE = 1;
@@ -34,6 +37,7 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public int getItemViewType(int position) {
+        if (!isOnline) return TYPE_OFFLINE;
         if (maxContent == 0) return TYPE_EMPTY;
         if (postDataArrayList.size() < position + 1 && maxContent > 0) return TYPE_MORE;
         return TYPE_CONTENT;
@@ -42,19 +46,28 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == TYPE_EMPTY) return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_empty_admin, parent, false)) {
-            @Override
-            public String toString() {
-                return super.toString();
-            }
-        };
+        if (viewType == TYPE_OFFLINE)
+            return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_offline, parent, false)) {
+                @Override
+                public String toString() {
+                    return super.toString();
+                }
+            };
+        if (viewType == TYPE_EMPTY)
+            return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_empty_admin, parent, false)) {
+                @Override
+                public String toString() {
+                    return super.toString();
+                }
+            };
         else if (viewType == TYPE_MORE)
             return new MoreHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_more, parent, false));
         return new AdminPostHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_admin_content, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int p) {
+        final int position = holder.getAdapterPosition();
         if (holder instanceof AdminPostHolder) {
             AdminPostHolder adminPostHolder = (AdminPostHolder) holder;
             PostData postData = postDataArrayList.get(position);
@@ -66,6 +79,7 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     postDataArrayList.remove(position);
                     --maxContent;
                     notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, postDataArrayList.size());
                 }
             });
             adminPostHolder.denyButton.setOnClickListener(v -> {
@@ -73,6 +87,7 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     postDataArrayList.remove(position);
                     --maxContent;
                     notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, postDataArrayList.size());
                 }
             });
         } else if (holder instanceof MoreHolder) {
@@ -85,9 +100,13 @@ public class AdminPostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         this.maxContent = maxContent;
     }
 
+    public void setOnline(boolean online) {
+        isOnline = online;
+    }
+
     @Override
     public int getItemCount() {
-        if (maxContent == 0)
+        if (maxContent == 0 || !isOnline)
             return 1;
         if (maxContent > postDataArrayList.size())
             return postDataArrayList.size() + 1;

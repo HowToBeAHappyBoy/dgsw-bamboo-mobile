@@ -9,15 +9,16 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.AppCompatButton;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 
 import com.dgsw.bamboo.R;
+import com.dgsw.bamboo.Tools;
 import com.dgsw.bamboo.activity.MainActivity;
 import com.dgsw.bamboo.data.URLS;
 
@@ -55,7 +56,8 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         textInputEditText = view.findViewById(R.id.editText);
         textInputEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -65,23 +67,29 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             }
 
             @Override
-            public void afterTextChanged(Editable editable) {}
+            public void afterTextChanged(Editable editable) {
+            }
         });
-        AppCompatButton sendButton = view.findViewById(R.id.sendButton);
+        Button sendButton = view.findViewById(R.id.sendButton);
         sendButton.setOnClickListener(this);
         return view;
     }
 
     @Override
     public void onClick(View view) {
+        if (getActivity() != null) {
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
+        if (!Tools.isInternetAvailable()) {
+            Snackbar.make(view, getString(R.string.offline), Snackbar.LENGTH_SHORT).show();
+            return;
+        }
         if (textInputEditText.getText() != null)
-            if (textInputEditText.getText().toString().isEmpty()) {
+            if (textInputEditText.getText().toString().trim().isEmpty()) {
                 textInputLayout.setError(getString(R.string.empty_error));
-                if (getActivity() != null) {
-                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null)
-                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-                }
                 Snackbar.make(view, getString(R.string.empty_error), Snackbar.LENGTH_SHORT).show();
                 return;
             }
@@ -92,13 +100,10 @@ public class PostFragment extends Fragment implements View.OnClickListener {
             e.printStackTrace();
         }
         new PostTask().setTaskListener(responseCode -> {
-            if (getActivity() != null)
+            if (getActivity() != null) {
                 switch (responseCode) {
                     case HttpURLConnection.HTTP_CREATED:
                         textInputEditText.getText().clear();
-                        InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                        if (imm != null)
-                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                         new AlertDialog.Builder(getActivity())
                                 .setMessage(R.string.post_ok)
                                 .setCancelable(false)
@@ -109,10 +114,11 @@ public class PostFragment extends Fragment implements View.OnClickListener {
                                 .show();
                         break;
                     case HttpURLConnection.HTTP_INTERNAL_ERROR:
-                        textInputLayout.setError(getActivity().getString(R.string.post_error));
-                        Snackbar.make(view, getActivity().getString(R.string.unknown_error), Snackbar.LENGTH_SHORT).show();
+                        textInputLayout.setError(getString(R.string.post_error));
+                        Snackbar.make(view, getString(R.string.unknown_error), Snackbar.LENGTH_SHORT).show();
                         break;
                 }
+            }
         }).execute(jsonObject);
     }
 

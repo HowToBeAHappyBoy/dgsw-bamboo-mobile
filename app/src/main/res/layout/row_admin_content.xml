@@ -45,7 +45,7 @@
 
                 <Button
                     android:id="@+id/allowButton"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    style="@style/AppTheme.Button.Borderless"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -58,6 +58,7 @@
                     android:text="@string/allow"
                     android:textColor="@color/colorButton"
                     android:textStyle="bold"
+                    android:theme="@style/AppTheme.Button.Borderless"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/timestamp"
                     app:layout_constraintHorizontal_bias="0.05"
@@ -66,7 +67,7 @@
 
                 <Button
                     android:id="@+id/denyButton"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    style="@style/AppTheme.Button.Borderless.Deny"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -79,6 +80,7 @@
                     android:text="@string/deny"
                     android:textColor="@color/colorButtonDeny"
                     android:textStyle="bold"
+                    android:theme="@style/AppTheme.Button.Borderless.Deny"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/timestamp"
                     app:layout_constraintHorizontal_bias="0.0"

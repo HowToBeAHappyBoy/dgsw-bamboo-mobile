@@ -21,8 +21,12 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Activity activity;
     private PostViewFragment fragment;
 
+    private boolean isOnline = true;
+
     private int maxContent;
 
+    private final static int TYPE_OFFLINE = -2;
+    private final static int TYPE_EMPTY = -1;
     private final static int TYPE_CONTENT = 0;
     private final static int TYPE_MORE = 1;
 
@@ -36,6 +40,8 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
+        if (!isOnline) return TYPE_OFFLINE;
+        if (maxContent == 0) return TYPE_EMPTY;
         if (postDataArrayList.size() < position + 1 && maxContent > 0) return TYPE_MORE;
         return TYPE_CONTENT;
     }
@@ -43,6 +49,20 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_OFFLINE)
+            return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_offline, parent, false)) {
+                @Override
+                public String toString() {
+                    return super.toString();
+                }
+            };
+        if (viewType == TYPE_EMPTY)
+            return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_empty_admin, parent, false)) {
+                @Override
+                public String toString() {
+                    return super.toString();
+                }
+            };
         if (viewType == TYPE_MORE)
             return new MoreHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_more, parent, false));
         return new PostHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.row_content, parent, false));
@@ -52,7 +72,6 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof PostHolder) {
             PostHolder postHolder = (PostHolder) holder;
-            //holder.setIsRecyclable(false);
 
             PostData postData = postDataArrayList.get(position);
             postHolder.title.setText(String.format(Locale.KOREA, activity.getResources().getString(R.string.title), postData.getPostIndex()));
@@ -77,8 +96,14 @@ public class PostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.maxContent = maxContent;
     }
 
+    public void setOnline(boolean online) {
+        isOnline = online;
+    }
+
     @Override
     public int getItemCount() {
+        if (maxContent == 0 || !isOnline)
+            return 1;
         if (maxContent > postDataArrayList.size())
             return postDataArrayList.size() + 1;
         return postDataArrayList.size();

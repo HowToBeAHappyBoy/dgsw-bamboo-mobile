@@ -1,7 +1,9 @@
 package com.dgsw.bamboo.activity;
 
 import android.animation.ValueAnimator;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +31,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     ActionBarDrawerToggle toggle;
     NavigationView navigationView;
+
+    private boolean adminMenu = false;
 
     PostViewFragment postViewFragment = PostViewFragment.newInstance();
     PostFragment postFragment = PostFragment.newInstance();
@@ -80,11 +84,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
             fragmentTransaction.replace(R.id.fragment_content, postViewFragment);
             fragmentTransaction.commit();
+        } else {
+            adminMenu = savedInstanceState.getBoolean("adminMenu");
+            adminMenuVisible(adminMenu);
+            if (savedInstanceState.getBoolean("drawerOpen"))
+                clearLightStatusNavigationBar(v, this);
         }
     }
 
     public void adminMenuVisible(boolean visible) {
-        navigationView.getMenu().getItem(3).setVisible(visible);
+        adminMenu = visible;
+        navigationView.getMenu().getItem(4).setVisible(visible);
     }
 
     public void toPostViewFragment() {
@@ -142,6 +152,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Data.clear();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        outState.putBoolean("adminMenu", adminMenu);
+        outState.putBoolean("drawerOpen", drawer.isDrawerOpen(GravityCompat.START));
+    }
+
+    @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         toggle.onConfigurationChanged(newConfig);
@@ -173,13 +197,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.menu_admin:
                 transaction.replace(R.id.fragment_content, adminFragment);
                 break;
+            case R.id.menu_github:
+                startActivity(new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/seojeenyeok/dgsw-bamboo-mobile")));
+                isUI = false;
+                break;
+            case R.id.menu_bug_report:
+                startActivity(new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/seojeenyeok/dgsw-bamboo-mobile/issues/new")));
+                isUI = false;
+                break;
             case R.id.menu_logout:
                 Data.clear();
                 Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_content);
                 if (fragment != null)
-                if (fragment instanceof AdminFragment) {
-                    ((AdminFragment) fragment).setViewVisibility(View.INVISIBLE, View.VISIBLE);
-                }
+                    if (fragment instanceof AdminFragment) {
+                        ((AdminFragment) fragment).setViewVisibility(View.GONE, View.VISIBLE);
+                    }
                 adminMenuVisible(false);
                 isUI = false;
                 break;
