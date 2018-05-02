@@ -3,4 +3,6 @@
 
 #그렇습니다
 
-__**곧 어딘가에 배포할 예정**__
+**1.0**
+* [GitHub](https://github.com/seojeenyeok/dgsw-bamboo-mobile/releases/download/1.0/app-release.apk)
+* [~~Google Play~~]()
