@@ -1,4 +1,4 @@
-package com.dgsw.bamboo;
+package com.dgsw.bamboo.tool;
 
 import android.os.AsyncTask;
 
@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 
-public class Tools {
+public class NetTool {
     public static boolean isInternetAvailable() {
         try {
             return new Task().execute().get();

@@ -9,8 +9,6 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +16,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 
 import com.dgsw.bamboo.R;
-import com.dgsw.bamboo.Tools;
+import com.dgsw.bamboo.text.SimpleTextWatcher;
+import com.dgsw.bamboo.tool.NetTool;
 import com.dgsw.bamboo.activity.MainActivity;
 import com.dgsw.bamboo.data.URLS;
 
@@ -54,20 +53,12 @@ public class PostFragment extends Fragment implements View.OnClickListener {
         View view = inflater.inflate(R.layout.fragment_post, container, false);
         textInputLayout = view.findViewById(R.id.textInputLayout);
         textInputEditText = view.findViewById(R.id.editText);
-        textInputEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
-
+        textInputEditText.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (textInputLayout.isErrorEnabled()) {
                     textInputLayout.setErrorEnabled(false);
                 }
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
             }
         });
         Button sendButton = view.findViewById(R.id.sendButton);
@@ -83,7 +74,7 @@ public class PostFragment extends Fragment implements View.OnClickListener {
                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }
         }
-        if (!Tools.isInternetAvailable()) {
+        if (!NetTool.isInternetAvailable()) {
             Snackbar.make(view, getString(R.string.offline), Snackbar.LENGTH_SHORT).show();
             return;
         }

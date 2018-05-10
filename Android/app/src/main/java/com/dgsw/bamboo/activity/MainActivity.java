@@ -85,6 +85,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             fragmentTransaction.replace(R.id.fragment_content, postViewFragment);
             fragmentTransaction.commit();
         } else {
+            Data.adminName = savedInstanceState.getString("adminName");
+            Data.setToken(savedInstanceState.getByteArray("token"));
             adminMenu = savedInstanceState.getBoolean("adminMenu");
             adminMenuVisible(adminMenu);
             if (savedInstanceState.getBoolean("drawerOpen"))
@@ -161,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        outState.putString("adminName", Data.adminName);
+        outState.putByteArray("token", Data.getToken());
         outState.putBoolean("adminMenu", adminMenu);
         outState.putBoolean("drawerOpen", drawer.isDrawerOpen(GravityCompat.START));
     }

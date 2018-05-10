@@ -35,7 +35,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import static com.dgsw.bamboo.Tools.isInternetAvailable;
+import static com.dgsw.bamboo.tool.NetTool.isInternetAvailable;
 
 public class PostViewFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 

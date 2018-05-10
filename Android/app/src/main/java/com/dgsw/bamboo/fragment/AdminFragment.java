@@ -5,9 +5,9 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
@@ -18,15 +18,15 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 
-import com.dgsw.bamboo.Tools;
+import com.dgsw.bamboo.annotation.ViewVisibility;
+import com.dgsw.bamboo.text.SimpleTextWatcher;
+import com.dgsw.bamboo.tool.NetTool;
 import com.dgsw.bamboo.recycler.AdminPostAdapter;
 import com.dgsw.bamboo.data.Data;
 import com.dgsw.bamboo.data.PostData;
@@ -55,7 +55,7 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
-import static com.dgsw.bamboo.Tools.isInternetAvailable;
+import static com.dgsw.bamboo.tool.NetTool.isInternetAvailable;
 
 public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
 
@@ -94,44 +94,28 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         TextInputLayout idLayout = view.findViewById(R.id.inputIDLayout);
         TextInputLayout pwLayout = view.findViewById(R.id.inputPWLayout);
         id = view.findViewById(R.id.inputID);
-        id.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
-
+        id.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (idLayout.isErrorEnabled())
                     idLayout.setErrorEnabled(false);
                 if (pwLayout.isErrorEnabled())
                     pwLayout.setErrorEnabled(false);
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
             }
         });
         pw = view.findViewById(R.id.inputPW);
-        pw.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
-
+        pw.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (idLayout.isErrorEnabled())
                     idLayout.setErrorEnabled(false);
                 if (pwLayout.isErrorEnabled())
                     pwLayout.setErrorEnabled(false);
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
             }
         });
         Button signInButton = view.findViewById(R.id.signInButton);
         signInButton.setOnClickListener(v -> {
-            if (!Tools.isInternetAvailable()) {
+            if (!NetTool.isInternetAvailable()) {
                 Snackbar.make(view, getString(R.string.offline), Snackbar.LENGTH_SHORT).show();
                 return;
             }
@@ -201,8 +185,8 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                         if (maxContent >= count) if (maxContent != 0) count += 5;
                         adminPostAdapter.notifyDataSetChanged();
                         swipeRefreshLayout.setRefreshing(false);
-                    }).execute(Data.token);
-                }).execute(Data.token);
+                    }).execute(Data.getTokenToString());
+                }).execute(Data.getTokenToString());
             } else {
                 swipeRefreshLayout.setRefreshing(false);
                 adminPostAdapter.setMaxContent(maxContent);
@@ -215,10 +199,6 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         recyclerView.setAdapter(adminPostAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-    }
-
-    @IntDef(value = {View.VISIBLE, View.INVISIBLE, View.GONE})
-    public @interface ViewVisibility {
     }
 
     public void setViewVisibility(@ViewVisibility int adminVisibility, @ViewVisibility int signInVisibility) {
@@ -235,7 +215,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 adminPostAdapter.notifyItemInserted(postDataList.size() - 1);
                 adminPostAdapter.notifyDataSetChanged();
             }
-        }).execute(Data.token);
+        }).execute(Data.getTokenToString());
     }
 
     public boolean postAllow(int idx) {
@@ -249,7 +229,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         }
         int responseCode = 0;
         try {
-            responseCode = new PostTask(getView(), (MainActivity) getActivity()).execute(new PostRequest(jsonObject, Data.token, 1)).get();
+            responseCode = new PostTask(getView(), (MainActivity) getActivity()).execute(new PostRequest(jsonObject, Data.getTokenToString(), 1)).get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -267,7 +247,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         }
         int responseCode = 0;
         try {
-            responseCode = new PostTask(getView(), (MainActivity) getActivity()).execute(new PostRequest(jsonObject, Data.token, 2)).get();
+            responseCode = new PostTask(getView(), (MainActivity) getActivity()).execute(new PostRequest(jsonObject, Data.getTokenToString(), 2)).get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -300,8 +280,8 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                     adminPostAdapter.notifyItemRangeChanged(0, postDataArrayList.size() - 1);
                     adminPostAdapter.notifyDataSetChanged();
                     swipeRefreshLayout.setRefreshing(false);
-                }).execute(Data.token);
-            }).execute(Data.token);
+                }).execute(Data.getTokenToString());
+            }).execute(Data.getTokenToString());
         } else {
             adminPostAdapter.setOnline(false);
             swipeRefreshLayout.setRefreshing(false);
@@ -315,12 +295,12 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         private String token;
         private int type;
 
-        public PostRequest(JSONObject jsonObject, int type) {
+        PostRequest(JSONObject jsonObject, int type) {
             this.jsonObject = jsonObject;
             this.type = type;
         }
 
-        public PostRequest(JSONObject jsonObject, String token, int type) {
+        PostRequest(JSONObject jsonObject, String token, int type) {
             this.jsonObject = jsonObject;
             this.token = token;
             this.type = type;
@@ -346,7 +326,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         private WeakReference<View> viewWeakReference;
         private WeakReference<MainActivity> activityWeakReference;
 
-        public PostTask(View view, MainActivity mainActivity) {
+        PostTask(View view, MainActivity mainActivity) {
             this.viewWeakReference = new WeakReference<>(view);
             this.activityWeakReference = new WeakReference<>(mainActivity);
         }
@@ -405,7 +385,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                         case 0:
                             JSONObject jsonObject = new JSONObject(stringBuilder.toString());
                             Data.adminName = jsonObject.getString("admin");
-                            Data.token = jsonObject.getString("token");
+                            Data.setToken(jsonObject.getString("token"));
                             Snackbar.make(viewWeakReference.get(), "환영합니다, " + Data.adminName + "님", Snackbar.LENGTH_SHORT).show();
                             new Handler(Looper.getMainLooper()).post(() -> activityWeakReference.get().adminMenuVisible(true));
                             break;
@@ -453,7 +433,7 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         }
 
         public interface TaskListener {
-            void onTaskFinished(Integer responesCode);
+            void onTaskFinished(Integer responseCode);
         }
     }
 
@@ -589,9 +569,9 @@ public class AdminFragment extends Fragment implements SwipeRefreshLayout.OnRefr
         }
 
         @Override
-        protected void onPostExecute(ArrayList<PostData> postDatas) {
-            super.onPostExecute(postDatas);
-            if (taskListener != null) taskListener.onTaskFinished(postDatas);
+        protected void onPostExecute(ArrayList<PostData> postDataArrayList) {
+            super.onPostExecute(postDataArrayList);
+            if (taskListener != null) taskListener.onTaskFinished(postDataArrayList);
         }
 
         GetPost setTaskListener(TaskListener taskListener) {
